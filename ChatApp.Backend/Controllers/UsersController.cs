@@ -18,7 +18,7 @@ namespace ChatApp.Backend.Controllers
 
         // 1. Yeni İstifadəçi Qeydiyyatı (POST: api/users/register)
         [HttpPost("register")]
-        public async Task<IActionResult> Register(string username, string email)
+        public async Task<IActionResult> Register([FromQuery] string username, [FromQuery] string email)
         {
             // Eyni adlı istifadəçinin olub-olmadığını yoxlayaq
             var userExists = await _context.Users.AnyAsync(u => u.Username == username);
@@ -36,9 +36,8 @@ namespace ChatApp.Backend.Controllers
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            return Ok(user); // Bizə Id-si yaranmış istifadəçini qaytaracaq (Məsələn, Id: 1)
+            return Ok(user);
         }
-
         // 2. Bütün İstifadəçilərin Siyahısı (GET: api/users)
         [HttpGet]
         public async Task<IActionResult> GetUsers()
