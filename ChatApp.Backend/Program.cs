@@ -1,8 +1,14 @@
-﻿using Microsoft.EntityFrameworkCore; 
-using ChatApp.Backend.Data;          
+﻿using Microsoft.EntityFrameworkCore;
+using ChatApp.Backend.Data;
 using ChatApp.Backend.Hubs;
 
+// --- 1. PORT AYARI (Railway üçün mütləqdir) ---
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+
 var builder = WebApplication.CreateBuilder(args);
+
+// .NET-ə Railway-in verdiyi portu dinləməsini əmr edirik
+builder.WebHost.UseUrls($"http://*:{port}");
 
 // Xidmətlərin əlavə edilməsi
 builder.Services.AddControllers();
@@ -10,7 +16,6 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSignalR();
 
-// Köhnə UseSqlServer sətrini silirik və bunu yazırıq:
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseInMemoryDatabase("ChatAppMemoryDB"));
 
@@ -25,27 +30,22 @@ builder.Services.AddCors(options => {
 
 var app = builder.Build();
 
-// --- 2. Middleware-ləri (App pipeline) bura əlavə et ---
+// Canlıda (Railway-də) Swagger-i görmək və test etmək üçün bu şərti ləğv edirik
+app.UseSwagger();
+app.UseSwaggerUI();
 
-// İnkişaf mərhələsində Swagger-i aktiv edirik
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Railway HTTP sorğularını özü idarə etdiyi üçün canlıda bu bəzən xətaya səbəb olur,
+// müvəqqəti olaraq şərhə (comment) alırıq:
+// app.UseHttpsRedirection();
 
-app.UseHttpsRedirection();
+app.UseStaticFiles();
 
-app.UseStaticFiles(); // Bu kod .NET-ə wwwroot içindəki HTML-i oxumağa icazə verir
-
-// CORS-u aktiv edirik (Həmişə Authorization-dan əvvəl gəlməlidir)
 app.UseCors("AllowAll");
 
 app.UseAuthorization();
 
 app.MapControllers();
 
-// SignalR Hub-ın yolunu (route) təyin edirik
 app.MapHub<ChatHub>("/chatHub");
 
 app.Run();
