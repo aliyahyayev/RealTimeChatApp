@@ -126,71 +126,79 @@
     </div>
 
     <script>
-    // PORTU BURA YAZIN (Məsələn: 7285)
-        const BASE_URL = "https://realtimechatapp-production-1e1f.up.railway.app/";
+        // Sondakı lazımsız slaş işarəsi təmizləndi
+        const BASE_URL = "https://realtimechatapp-production-1e1f.up.railway.app";
 
-    let connection = null;
-    let currentUserId = null;
-    let currentUsername = null;
+        let connection = null;
+        let currentUserId = null;
+        let currentUsername = null;
 
-    async function registerAndConnect() {
-        const username = document.getElementById("usernameInput").value.trim();
-        if (!username) return alert("Ad yazın!");
+        async function registerAndConnect() {
+            const username = document.getElementById("usernameInput").value.trim();
+            if (!username) return alert("Ad yazın!");
 
-        try {
-            const res = await fetch(BASE_URL + "/api/users/register?username=" + encodeURIComponent(username) + "&email=" + username + "@chat.com", {
-                method: "POST"
+            try {
+                // Slaş xətası və url strukturu tam olaraq düzəldildi
+                const targetUrl = `${BASE_URL}/api/users/register?username=${encodeURIComponent(username)}&email=${encodeURIComponent(username)}@chat.com`;
+
+                const res = await fetch(targetUrl, {
+                    method: "POST",
+                    headers: {
+                        "Accept": "application/json",
+                        "Content-Type": "application/json"
+                    }
+                });
+
+                if (!res.ok) {
+                    alert("Xəta: " + await res.text());
+                    return;
+                }
+
+                const user = await res.json();
+                currentUserId = user.id;
+                currentUsername = user.username;
+
+                document.getElementById("authPanel").style.display = "none";
+                document.getElementById("inputPanel").style.opacity = "1";
+                document.getElementById("inputPanel").style.pointerEvents = "auto";
+
+                initSignalR();
+            } catch (e) {
+                console.error(e);
+                alert("Backendə qoşulma xətası! Serverin aktiv olduğundan əmin olun.");
+            }
+        }
+
+        function initSignalR() {
+            // SignalR üçün url düzəldildi
+            connection = new signalR.HubConnectionBuilder()
+                .withUrl(BASE_URL + "/chatHub")
+                .withAutomaticReconnect() // Kəsinti olarsa avtomatik bərpa etsin
+                .build();
+
+            connection.on("ReceiveMessage", function (user, message) {
+                const chatMessages = document.getElementById("chatMessages");
+                const msgDiv = document.createElement("div");
+                msgDiv.className = "message " + (user === currentUsername ? "sent" : "received");
+                msgDiv.innerHTML = "<b>" + user + ":</b> " + message;
+                chatMessages.appendChild(msgDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
             });
 
-            if (!res.ok) {
-                alert("Xəta: " + await res.text());
-                return;
-            }
-
-            const user = await res.json();
-            currentUserId = user.id;
-            currentUsername = user.username;
-
-            document.getElementById("authPanel").style.display = "none";
-            document.getElementById("inputPanel").style.opacity = "1";
-            document.getElementById("inputPanel").style.pointerEvents = "auto";
-
-            initSignalR();
-        } catch (e) {
-            alert("Backendə qoşulma xətası! Serverin aktiv olduğundan əmin olun.");
+            connection.start()
+                .then(() => console.log("SignalR bağlantısı uğurla quruldu!"))
+                .catch(err => console.error("SignalR xətası:", err.toString()));
         }
-    }
-
-    function initSignalR() {
-        connection = new signalR.HubConnectionBuilder()
-            .withUrl(BASE_URL + "/chatHub")
-            .build();
-
-        connection.on("ReceiveMessage", function (user, message) {
-            const chatMessages = document.getElementById("chatMessages");
-            const msgDiv = document.createElement("div");
-            msgDiv.className = "message " + (user === currentUsername ? "sent" : "received");
-            msgDiv.innerHTML = "<b>" + user + ":</b> " + message;
-            chatMessages.appendChild(msgDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        });
-
-        connection.start().catch(err => console.error(err.toString()));
-    }
 
         async function sendMessage() {
             const input = document.getElementById("messageInput");
             const text = input.value.trim();
 
-            // Əgər mətn boşdursa və ya internet kəsilibsə, heç nə etmə
             if (!text || !connection) return;
 
             try {
-                // Sırf serverdəki metodu çağırırıq. 
-                // Ekrana yazdırma işini yuxarıdakı connection.on("ReceiveMessage") funksiyası özü edəcək!
                 await connection.invoke("SendMessage", currentUserId, text);
-
-                input.value = ""; // Sadece input qutusunu təmizləyirik
+                input.value = "";
             } catch (e) {
                 console.error("Mesaj göndərilərkən xəta baş verdi:", e);
             }
