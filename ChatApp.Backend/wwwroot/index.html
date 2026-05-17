@@ -1,0 +1,202 @@
+﻿<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <title>.NET Real-Time Chat</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: sans-serif;
+        }
+
+        body {
+            background-color: #f4f6f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .chat-container {
+            width: 400px;
+            height: 500px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .auth-panel {
+            padding: 20px;
+            background: #007bff;
+            color: white;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+            .auth-panel input {
+                padding: 8px;
+                border: none;
+                border-radius: 4px;
+            }
+
+            .auth-panel button {
+                padding: 8px;
+                border: none;
+                background: #28a745;
+                color: white;
+                font-weight: bold;
+                border-radius: 4px;
+                cursor: pointer;
+            }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: #e5ddd5;
+        }
+
+        .message {
+            padding: 8px 12px;
+            border-radius: 6px;
+            max-width: 75%;
+            font-size: 14px;
+        }
+
+            .message.received {
+                background: white;
+                align-self: flex-start;
+            }
+
+            .message.sent {
+                background: #dcf8c6;
+                align-self: flex-end;
+            }
+
+        .input-panel {
+            padding: 10px;
+            background: #f0f0f0;
+            display: flex;
+            gap: 10px;
+        }
+
+            .input-panel input {
+                flex: 1;
+                padding: 8px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+            }
+
+            .input-panel button {
+                padding: 0 15px;
+                border: none;
+                background: #007bff;
+                color: white;
+                border-radius: 4px;
+                cursor: pointer;
+            }
+    </style>
+</head>
+<body>
+
+    <div class="chat-container">
+        <div id="authPanel" class="auth-panel">
+            <h3>Çata Qoşul</h3>
+            <input type="text" id="usernameInput" placeholder="İstifadəçi adı...">
+            <button onclick="registerAndConnect()">Qoşul</button>
+        </div>
+
+        <div id="chatMessages" class="chat-messages"></div>
+
+        <div id="inputPanel" class="input-panel" style="opacity: 0.5; pointer-events: none;">
+            <input type="text" id="messageInput" placeholder="Mesaj yazın...">
+            <button onclick="sendMessage()">Göndər</button>
+        </div>
+    </div>
+
+    <script>
+    // PORTU BURA YAZIN (Məsələn: 7285)
+    const PORT = "7285";
+    const BASE_URL = "https://localhost:" + PORT;
+
+    let connection = null;
+    let currentUserId = null;
+    let currentUsername = null;
+
+    async function registerAndConnect() {
+        const username = document.getElementById("usernameInput").value.trim();
+        if (!username) return alert("Ad yazın!");
+
+        try {
+            const res = await fetch(BASE_URL + "/api/users/register?username=" + encodeURIComponent(username) + "&email=" + username + "@chat.com", {
+                method: "POST"
+            });
+
+            if (!res.ok) {
+                alert("Xəta: " + await res.text());
+                return;
+            }
+
+            const user = await res.json();
+            currentUserId = user.id;
+            currentUsername = user.username;
+
+            document.getElementById("authPanel").style.display = "none";
+            document.getElementById("inputPanel").style.opacity = "1";
+            document.getElementById("inputPanel").style.pointerEvents = "auto";
+
+            initSignalR();
+        } catch (e) {
+            alert("Backendə qoşulma xətası! Serverin aktiv olduğundan əmin olun.");
+        }
+    }
+
+    function initSignalR() {
+        connection = new signalR.HubConnectionBuilder()
+            .withUrl(BASE_URL + "/chatHub")
+            .build();
+
+        connection.on("ReceiveMessage", function (user, message) {
+            const chatMessages = document.getElementById("chatMessages");
+            const msgDiv = document.createElement("div");
+            msgDiv.className = "message " + (user === currentUsername ? "sent" : "received");
+            msgDiv.innerHTML = "<b>" + user + ":</b> " + message;
+            chatMessages.appendChild(msgDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        });
+
+        connection.start().catch(err => console.error(err.toString()));
+    }
+
+        async function sendMessage() {
+            const input = document.getElementById("messageInput");
+            const text = input.value.trim();
+
+            // Əgər mətn boşdursa və ya internet kəsilibsə, heç nə etmə
+            if (!text || !connection) return;
+
+            try {
+                // Sırf serverdəki metodu çağırırıq. 
+                // Ekrana yazdırma işini yuxarıdakı connection.on("ReceiveMessage") funksiyası özü edəcək!
+                await connection.invoke("SendMessage", currentUserId, text);
+
+                input.value = ""; // Sadece input qutusunu təmizləyirik
+            } catch (e) {
+                console.error("Mesaj göndərilərkən xəta baş verdi:", e);
+            }
+        }
+    </script>
+
+</body>
+</html>
