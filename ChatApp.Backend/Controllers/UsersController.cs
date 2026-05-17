@@ -17,16 +17,20 @@ namespace ChatApp.Backend.Controllers
         }
 
         // 1. Yeni İstifadəçi Qeydiyyatı (POST: api/users/register)
+        // 1. İstifadəçi Girişi və ya Qeydiyyatı (POST: api/users/register)
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromQuery] string username, [FromQuery] string email)
         {
-            // Eyni adlı istifadəçinin olub-olmadığını yoxlayaq
-            var userExists = await _context.Users.AnyAsync(u => u.Username == username);
-            if (userExists)
+            // Eyni adlı istifadəçinin olub-olmadığını yoxlayırıq
+            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+
+            // Əgər istifadəçi artıq varsa, xəta vermirik! Mövcud istifadəçini geri qaytarırıq (Login mexanizmi)
+            if (existingUser != null)
             {
-                return BadRequest("Bu istifadəçi adı artıq götürülüb.");
+                return Ok(existingUser);
             }
 
+            // Əgər istifadəçi yoxdursa, yeni qeydiyyat yaradırıq (Register mexanizmi)
             var user = new User
             {
                 Username = username,
@@ -36,7 +40,7 @@ namespace ChatApp.Backend.Controllers
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            return Ok(user);
+            return Ok(user); // Yeni yaranmış istifadəçini qaytarır
         }
         // 2. Bütün İstifadəçilərin Siyahısı (GET: api/users)
         [HttpGet]
