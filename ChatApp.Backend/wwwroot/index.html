@@ -14,7 +14,7 @@
         }
 
         body {
-            background-color: #dadbd4;
+            background-color: #0c1317;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -28,25 +28,27 @@
             width: 100%;
             height: 100vh;
             height: 100dvh;
-            background-color: #f0f2f5;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            background-color: #111b21;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
             overflow: hidden;
             position: relative;
         }
 
         @media (min-width: 900px) {
             .app-container {
-                width: 80%;
-                height: 90vh;
-                border-radius: 10px;
+                width: 85%;
+                height: 92vh;
+                border-radius: 12px;
+                border: 1px solid rgba(255, 255, 255, 0.05);
             }
         }
 
+        /* --- SOL TƏRƏF: Siyahı Paneli --- */
         .sidebar {
             width: 100%;
             height: 100%;
-            background: white;
-            border-right: 1px solid #e3e3e3;
+            background: #111b21;
+            border-right: 1px solid #222e35;
             display: flex;
             flex-direction: column;
             transition: transform 0.3s ease-in-out;
@@ -59,34 +61,40 @@
         @media (min-width: 900px) {
             .sidebar {
                 width: 30%;
-                min-width: 280px;
+                min-width: 300px;
                 position: static;
                 transform: none !important;
             }
         }
 
         .sidebar-header {
-            padding: 15px;
-            background: #f0f2f5;
-            font-weight: bold;
+            padding: 15px 20px;
+            background: #202c33;
+            font-weight: 600;
             font-size: 18px;
-            border-bottom: 1px solid #e3e3e3;
+            color: #e9edef;
+            border-bottom: 1px solid #222e35;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            height: 60px;
+            height: 65px;
         }
 
         .logout-btn {
             background: #ea0038;
             color: white;
             border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
+            padding: 6px 14px;
+            border-radius: 20px;
             font-size: 12px;
             cursor: pointer;
             font-weight: bold;
+            transition: background 0.2s;
         }
+
+            .logout-btn:hover {
+                background: #c2002f;
+            }
 
         .chat-list {
             flex: 1;
@@ -94,22 +102,23 @@
         }
 
         .chat-item {
-            padding: 15px;
-            border-bottom: 1px solid #f0f2f5;
+            padding: 15px 20px;
+            border-bottom: 1px solid #1c272e;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 15px;
+            color: #e9edef;
             transition: 0.2s;
         }
 
             .chat-item:hover {
-                background: #f5f6f6;
+                background: #202c33;
             }
 
         .avatar {
-            width: 40px;
-            height: 40px;
+            width: 45px;
+            height: 45px;
             background: #00a884;
             color: white;
             border-radius: 50%;
@@ -117,11 +126,13 @@
             justify-content: center;
             align-items: center;
             font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
         .unread-badge {
-            background-color: #25d366;
-            color: white;
+            background-color: #00a884;
+            color: #111b21;
             font-size: 12px;
             font-weight: bold;
             padding: 3px 8px;
@@ -130,12 +141,13 @@
             display: none;
         }
 
+        /* --- SAĞ TƏRƏF: Mesajlaşma Paneli --- */
         .main-chat {
             width: 100%;
             height: 100%;
             display: flex;
             flex-direction: column;
-            background: #efeae2;
+            background: #0b141a;
             position: absolute;
             left: 100%;
             top: 0;
@@ -160,27 +172,29 @@
         }
 
         .chat-header {
-            padding: 15px;
-            background: #f0f2f5;
+            padding: 15px 20px;
+            background: #202c33;
+            color: #e9edef;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            font-weight: bold;
-            border-bottom: 1px solid #e3e3e3;
-            height: 60px;
+            font-weight: 600;
+            border-bottom: 1px solid #222e35;
+            height: 65px;
             flex-shrink: 0;
         }
 
         .header-left {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
 
         .back-btn {
             background: none;
             border: none;
-            font-size: 20px;
+            color: #00a884;
+            font-size: 22px;
             cursor: pointer;
             display: block;
             padding-right: 10px;
@@ -195,78 +209,133 @@
         .clear-btn {
             background: none;
             border: none;
-            color: #667781;
+            color: #8696a0;
             cursor: pointer;
             font-size: 14px;
-            padding: 5px 10px;
-            border-radius: 4px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            transition: 0.2s;
         }
 
             .clear-btn:hover {
-                background: rgba(0,0,0,0.05);
+                background: rgba(234, 0, 56, 0.1);
                 color: #ea0038;
             }
 
+        /* --- MESAJ SAHƏSİ VƏ DESEN (PATTERN) --- */
         .messages-area {
             flex: 1;
-            padding: 15px;
+            padding: 20px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
+            /* Müasir riyazi nöqtəli arxa fon deseni */
+            background-color: #0b141a;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 0);
+            background-size: 24px 24px;
         }
 
+            /* Skrol barın fərdiləşdirilməsi */
+            .messages-area::-webkit-scrollbar, .chat-list::-webkit-scrollbar {
+                width: 6px;
+            }
+
+            .messages-area::-webkit-scrollbar-thumb, .chat-list::-webkit-scrollbar-thumb {
+                background-color: rgba(255, 255, 255, 0.1);
+                border-radius: 4px;
+            }
+
+        /* --- MESAJ BALONLARI --- */
         .msg {
-            padding: 8px 12px;
-            border-radius: 8px;
-            max-width: 75%;
-            font-size: 14px;
-            line-height: 1.4;
+            padding: 10px 14px;
+            border-radius: 12px;
+            max-width: 70%;
+            font-size: 14.5px;
+            line-height: 1.5;
             word-wrap: break-word;
+            color: #e9edef;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            position: relative;
         }
+
+            .msg strong {
+                color: #00a884;
+                font-size: 12.5px;
+                display: block;
+                margin-bottom: 3px;
+            }
 
             .msg.sent {
-                background: #d9fdd3;
+                background: #005c4b; /* WhatsApp Dark Yaşılı */
                 align-self: flex-end;
+                border-top-right-radius: 2px;
             }
+
+                .msg.sent strong {
+                    color: #25d366; /* Göndərən özüdürsə fərqli rəng tonu */
+                }
 
             .msg.received {
-                background: white;
+                background: #202c33; /* WhatsApp Dark Boz-Mavi */
                 align-self: flex-start;
+                border-top-left-radius: 2px;
             }
 
+        /* --- INPUT SAHƏSİ --- */
         .input-area {
-            padding: 10px;
-            background: #f0f2f5;
+            padding: 12px 20px;
+            background: #202c33;
             display: flex;
-            gap: 10px;
+            gap: 12px;
             align-items: center;
-            height: 65px;
+            height: 70px;
             flex-shrink: 0;
-            border-top: 1px solid #e3e3e3;
+            border-top: 1px solid #222e35;
         }
 
             .input-area input {
                 flex: 1;
-                padding: 12px;
-                border: 1px solid #ccc;
-                border-radius: 6px;
+                padding: 12px 16px;
+                border: none;
+                border-radius: 8px;
                 outline: none;
                 font-size: 15px;
-                background: white;
+                background: #2a3942;
+                color: #e9edef;
+                transition: background 0.2s;
             }
 
+                .input-area input::placeholder {
+                    color: #8696a0;
+                }
+
+                .input-area input:focus {
+                    background: #32444f;
+                }
+
             .input-area button {
-                padding: 12px 18px;
+                padding: 12px 22px;
                 background: #00a884;
-                color: white;
+                color: #111b21;
                 border: none;
-                border-radius: 6px;
+                border-radius: 8px;
                 cursor: pointer;
                 font-weight: bold;
                 font-size: 15px;
+                transition: background 0.2s, transform 0.1s;
             }
 
+                .input-area button:hover {
+                    background: #006651;
+                    color: white;
+                }
+
+                .input-area button:active {
+                    transform: scale(0.98);
+                }
+
+        /* --- AUTH OVERLAY (GİRİŞ) --- */
         .auth-overlay {
             position: fixed;
             top: 0;
@@ -282,36 +351,54 @@
 
         .auth-box {
             background: #222e35;
-            padding: 30px;
-            border-radius: 10px;
-            width: 320px;
+            padding: 40px 30px;
+            border-radius: 12px;
+            width: 350px;
             text-align: center;
             color: #e9edef;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 18px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255, 255, 255, 0.03);
         }
 
+            .auth-box h2 {
+                font-weight: 500;
+                letter-spacing: 0.5px;
+            }
+
             .auth-box input {
-                padding: 12px;
+                padding: 14px;
                 border: none;
-                border-radius: 6px;
+                border-radius: 8px;
                 background: #2a3942;
                 color: white;
                 outline: none;
                 font-size: 15px;
+                border: 1px solid transparent;
+                transition: 0.2s;
             }
 
+                .auth-box input:focus {
+                    border-color: #00a884;
+                }
+
             .auth-box button {
-                padding: 12px;
+                padding: 14px;
                 background: #00a884;
-                color: white;
+                color: #111b21;
                 border: none;
-                border-radius: 6px;
+                border-radius: 8px;
                 font-weight: bold;
                 cursor: pointer;
                 font-size: 15px;
+                transition: background 0.2s;
             }
+
+                .auth-box button:hover {
+                    background: #00c298;
+                }
     </style>
 </head>
 <body>
@@ -320,7 +407,7 @@
     <div id="authOverlay" class="auth-overlay">
         <div class="auth-box">
             <h2>Chat Giriş</h2>
-            <p style="font-size: 12px; color: #8696a0;">Ad və Giriş Kodu (Şifrə) təyin edin</p>
+            <p style="font-size: 13px; color: #8696a0;">Ad və Giriş Kodu (Şifrə) təyin edin</p>
             <input type="text" id="usernameInput" placeholder="İstifadəçi adı...">
             <input type="password" id="passwordInput" placeholder="Giriş Kodu (Şifrə)...">
             <button onclick="loginOrRegister()">Daxil Ol</button>
@@ -336,7 +423,6 @@
                 <button class="logout-btn" onclick="logout()">Çıxış ↩</button>
             </div>
             <div class="chat-list" id="activeChatsList">
-                <!-- DƏYİŞDİ: Ümumi otağa badge-global id-si ilə bildiriş nişanı əlavə olundu -->
                 <div class="chat-item" onclick="switchToGlobalRoom()">
                     <div class="avatar" style="background: #007bff;">G</div>
                     <div><b>Ümumi Otaq</b></div>
@@ -402,22 +488,21 @@
                 const users = await res.json();
                 const listHtml = document.getElementById("activeChatsList");
 
-                // DƏYİŞDİ: Yenilənəndə də Ümumi Otağın bildiriş elementini qoruyuruq
                 listHtml.innerHTML = `
-                        <div class="chat-item" onclick="switchToGlobalRoom()">
-                            <div class="avatar" style="background: #007bff;">G</div>
-                            <div><b>Ümumi Otaq</b></div>
-                            <span class="unread-badge" id="badge-global">0</span>
-                        </div>`;
+                            <div class="chat-item" onclick="switchToGlobalRoom()">
+                                <div class="avatar" style="background: #007bff;">G</div>
+                                <div><b>Ümumi Otaq</b></div>
+                                <span class="unread-badge" id="badge-global">0</span>
+                            </div>`;
 
                 users.forEach(user => {
                     if (user.id !== currentUser.id) {
                         listHtml.innerHTML += `
-                                <div class="chat-item" id="chat-item-${user.id}" onclick="startPrivateChat('${user.id}', '${user.username}')">
-                                    <div class="avatar">${user.username[0].toUpperCase()}</div>
-                                    <div><b>${user.username}</b></div>
-                                    <span class="unread-badge" id="badge-${user.id}">0</span>
-                                </div>`;
+                                    <div class="chat-item" id="chat-item-${user.id}" onclick="startPrivateChat('${user.id}', '${user.username}')">
+                                        <div class="avatar">${user.username[0].toUpperCase()}</div>
+                                        <div><b>${user.username}</b></div>
+                                        <span class="unread-badge" id="badge-${user.id}">0</span>
+                                    </div>`;
                     }
                 });
             } catch (err) {
@@ -454,7 +539,6 @@
             document.getElementById("currentChatTitle").innerText = "Ümumi Otaq";
             document.getElementById("messagesArea").innerHTML = "";
 
-            // DƏYİŞDİ: Ümumi Otağa keçəndə onun yaşıl bildirişini sıfırla
             const badge = document.getElementById("badge-global");
             if (badge) {
                 badge.innerText = "0";
@@ -476,7 +560,6 @@
                 .withAutomaticReconnect()
                 .build();
 
-            // DƏYİŞDİ: Həm ümumi, həm şəxsi otaqların bildiriş məntiqi bura yığıldı
             connection.on("ReceivePrivateMessage", function (senderName, message, roomId) {
                 if (roomId === activeRoomId) {
                     appendMessage(senderName, message);
@@ -512,7 +595,6 @@
 
             connection.start().then(() => {
                 connection.invoke("JoinRoom", activeRoomId);
-                // DƏYİŞDİ: Qoşulan kimi Hub-a kim olduğumuzu bildiririk ki, bizi Online siyahısına salsın
                 connection.invoke("RegisterConnection", Number(currentUser.id));
             });
         }
@@ -533,7 +615,7 @@
             const area = document.getElementById("messagesArea");
             const div = document.createElement("div");
             div.className = "msg " + (sender === currentUser.username ? "sent" : "received");
-            div.innerHTML = `<strong>${sender}:</strong> <br> ${text}`;
+            div.innerHTML = `<strong>${sender}</strong>${text}`;
             area.appendChild(div);
             area.scrollTop = area.scrollHeight;
         }
@@ -579,7 +661,6 @@
 
         function logout() {
             if (connection) {
-                // connection.stop() metodu işə düşəndə arxa fonda Hub-dakı OnDisconnectedAsync tetiklenecek
                 connection.stop();
             }
             currentUser = null;
