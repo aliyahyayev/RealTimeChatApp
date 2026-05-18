@@ -5,65 +5,73 @@ using ChatApp.Backend.Models;
 
 namespace ChatApp.Backend.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/users")]
     public class UsersController : ControllerBase
     {
         private readonly AppDbContext _context;
 
-        public UsersController(AppDbContext _context)
+        // Frontend-dən gələn məlumatları qarşılamaq üçün kiçik model (DTO)
+        public class LoginRequest
         {
-            this._context = _context;
+            public string Username { get; set; } = string.Empty;
+            public string Password { get; set; } = string.Empty;
         }
 
-        // 1. Yeni İstifadəçi Qeydiyyatı (POST: api/users/register)
-        // 1. İstifadəçi Girişi və ya Qeydiyyatı (POST: api/users/register)
-        [HttpPost("register")]
-        public async Task<IActionResult> Register([FromQuery] string username, [FromQuery] string email)
+        public UsersController(AppDbContext context)
         {
-            // Eyni adlı istifadəçinin olub-olmadığını yoxlayırıq
-            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+            _context = context;
+        }
 
-            // Əgər istifadəçi artıq varsa, xəta vermirik! Mövcud istifadəçini geri qaytarırıq (Login mexanizmi)
+        // 1. Giriş və ya Qeydiyyat (POST: api/users/login-or-register)
+        [HttpPost("login-or-register")]
+        public async Task<IActionResult> LoginOrRegister([FromBody] LoginRequest request)
+        {
+            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == request.Username);
+
             if (existingUser != null)
             {
-                return Ok(existingUser);
+                // İstifadəçi tapıldı, şifrəni yoxlayırıq
+                // Real layihədə bu PasswordHash ilə yoxlanmalıdır, hələlik sadəlik üçün düz mətn kimi yoxlayırıq
+                if (existingUser.PasswordHash != request.Password)
+                {
+                    return BadRequest("Səhv Giriş Kodu (Şifrə)!");
+                }
+                return Ok(existingUser); // Giriş uğurludur
             }
 
-            // Əgər istifadəçi yoxdursa, yeni qeydiyyat yaradırıq (Register mexanizmi)
-            var user = new User
+            // İstifadəçi yoxdursa, yeni hesab yaradırıq
+            var newUser = new User
             {
-                Username = username,
-                Email = email
+                Username = request.Username,
+                PasswordHash = request.Password, // Frontend-dən gələn şifrəni bura yazırıq
+                Email = $"{request.Username}@chat.com"
             };
 
-            _context.Users.Add(user);
+            _context.Users.Add(newUser);
             await _context.SaveChangesAsync();
-
-            return Ok(user); // Yeni yaranmış istifadəçini qaytarır
+            return Ok(newUser);
         }
-        // 2. Bütün İstifadəçilərin Siyahısı (GET: api/users)
-        [HttpGet]
-        public async Task<IActionResult> GetUsers()
+
+        // 2. Çat siyahısı üçün digər bütün istifadəçiləri gətirmək (GET: api/users/all)
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAllUsers()
         {
-            var users = await _context.Users.ToListAsync();
+            var users = await _context.Users
+                .Select(u => new { u.Id, u.Username }) // Şifrələri frontenda göndərmirik (Təhlükəsizlik)
+                .ToListAsync();
+
             return Ok(users);
         }
 
-        // 3. Bazaya yazılan Mesajların Tarixçəsi (GET: api/users/messages)
-        // Bununla yoxlayacağıq ki, SignalR vasitəsilə gələn mesajlar RAM bazaya düşür ya yox
-        [HttpGet("messages")]
-        public async Task<IActionResult> GetMessages()
+        // 3. Konkret bir özəl otağın mesaj tarixçəsini gətirmək (GET: api/users/messages/{roomName})
+        [HttpGet("messages/{roomName}")]
+        public async Task<IActionResult> GetRoomMessages(string roomName)
         {
             var messages = await _context.Messages
-                .Include(m => m.User) // Mesajı yazan istifadəçinin məlumatlarını da gətirsin
-                .Select(m => new
-                {
-                    m.Id,
-                    Username = m.User.Username,
-                    m.Content,
-                    m.Timestamp
-                })
+                .Where(m => m.ChatRoom.RoomName == roomName)
+                .OrderBy(m => m.Timestamp)
+                .Select(m => new { m.SenderName, m.Content, m.Timestamp })
                 .ToListAsync();
 
             return Ok(messages);

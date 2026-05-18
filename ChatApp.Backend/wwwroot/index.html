@@ -2,208 +2,360 @@
 <html lang="az">
 <head>
     <meta charset="UTF-8">
-    <title>.NET Real-Time Chat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Style .NET Chat</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
         body {
-            background-color: #f4f6f9;
+            background-color: #dadbd4;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
         }
 
-        .chat-container {
-            width: 400px;
-            height: 500px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        /* Əsas Konteyner (WhatsApp tipli ekran) */
+        .app-container {
             display: flex;
-            flex-direction: column;
+            width: 100%;
+            height: 100vh;
+            background-color: #f0f2f5;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             overflow: hidden;
         }
 
-        .auth-panel {
-            padding: 20px;
-            background: #007bff;
-            color: white;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+        @media (min-width: 900px) {
+            .app-container {
+                width: 80%;
+                height: 90vh;
+                border-radius: 10px;
+            }
         }
 
-            .auth-panel input {
-                padding: 8px;
-                border: none;
-                border-radius: 4px;
+        /* Sol Panel - Çat siyahısı */
+        .sidebar {
+            width: 30%;
+            min-width: 250px;
+            background: white;
+            border-right: 1px solid #e3e3e3;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 15px;
+            background: #f0f2f5;
+            font-weight: bold;
+            font-size: 18px;
+            border-bottom: 1px solid #e3e3e3;
+        }
+
+        .chat-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .chat-item {
+            padding: 15px;
+            border-bottom: 1px solid #f0f2f5;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: 0.2s;
+        }
+
+            .chat-item:hover {
+                background: #f5f6f6;
             }
 
-            .auth-panel button {
-                padding: 8px;
-                border: none;
-                background: #28a745;
-                color: white;
-                font-weight: bold;
-                border-radius: 4px;
-                cursor: pointer;
+            .chat-item.active {
+                background: #ebebeb;
             }
 
-        .chat-messages {
+        .avatar {
+            width: 40px;
+            height: 40px;
+            background: #007bff;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        /* Sağ Panel - Söhbət ekranı */
+        .main-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #efeae2;
+        }
+
+        .chat-header {
+            padding: 15px;
+            background: #f0f2f5;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: bold;
+            border-bottom: 1px solid #e3e3e3;
+        }
+
+        .messages-area {
             flex: 1;
             padding: 20px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            background: #e5ddd5;
+            gap: 8px;
         }
 
-        .message {
+        /* Mesaj Balonları */
+        .msg {
             padding: 8px 12px;
-            border-radius: 6px;
-            max-width: 75%;
+            border-radius: 8px;
+            max-width: 65%;
             font-size: 14px;
+            line-height: 1.4;
+            word-wrap: break-word;
         }
 
-            .message.received {
+            .msg.sent {
+                background: #d9fdd3;
+                align-self: flex-end;
+            }
+
+            .msg.received {
                 background: white;
                 align-self: flex-start;
             }
 
-            .message.sent {
-                background: #dcf8c6;
-                align-self: flex-end;
-            }
-
-        .input-panel {
+        /* Giriş Paneli */
+        .input-area {
             padding: 10px;
-            background: #f0f0f0;
+            background: #f0f2f5;
             display: flex;
             gap: 10px;
+            align-items: center;
         }
 
-            .input-panel input {
+            .input-area input {
                 flex: 1;
-                padding: 8px;
-                border: 1px solid #ccc;
-                border-radius: 4px;
+                padding: 10px;
+                border: none;
+                border-radius: 6px;
+                outline: none;
+                font-size: 14px;
             }
 
-            .input-panel button {
-                padding: 0 15px;
-                border: none;
-                background: #007bff;
+            .input-area button {
+                padding: 10px 20px;
+                background: #00a884;
                 color: white;
-                border-radius: 4px;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                font-weight: bold;
+            }
+
+        /* Giriş/Qeydiyyat Modal ekranı */
+        .auth-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #111b21;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .auth-box {
+            background: #222e35;
+            padding: 30px;
+            border-radius: 10px;
+            width: 350px;
+            text-align: center;
+            color: #e9edef;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+            .auth-box input {
+                padding: 12px;
+                border: none;
+                border-radius: 6px;
+                background: #2a3942;
+                color: white;
+                outline: none;
+            }
+
+            .auth-box button {
+                padding: 12px;
+                background: #00a884;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                font-weight: bold;
                 cursor: pointer;
             }
     </style>
 </head>
 <body>
 
-    <div class="chat-container">
-        <div id="authPanel" class="auth-panel">
-            <h3>Çata Qoşul</h3>
+    <!-- Giriş Bölməsi -->
+    <div id="authOverlay" class="auth-overlay">
+        <div class="auth-box">
+            <h2>WhatsApp Chat-ə Giriş</h2>
+            <p style="font-size: 12px; color: #8696a0;">Ad və Giriş Kodu (Şifrə) təyin edin</p>
             <input type="text" id="usernameInput" placeholder="İstifadəçi adı...">
-            <button onclick="registerAndConnect()">Qoşul</button>
+            <input type="password" id="passwordInput" placeholder="Giriş Kodu (Şifrə)...">
+            <button onclick="loginOrRegister()">Daxil Ol</button>
+        </div>
+    </div>
+
+    <!-- Əsas İnterfeys -->
+    <div class="app-container" id="appMain" style="display: none;">
+        <!-- Sol Tərəf: Siyahı -->
+        <div class="sidebar">
+            <div class="sidebar-header" id="myProfileHeader">Çatlar</div>
+            <div class="chat-list" id="activeChatsList">
+                <!-- Aktiv söhbətlər dinamik olaraq bura gələcək -->
+                <div class="chat-item" onclick="selectRoom('global')">
+                    <div class="avatar">G</div>
+                    <div><b>Ümumi Otaq</b></div>
+                </div>
+            </div>
         </div>
 
-        <div id="chatMessages" class="chat-messages"></div>
-
-        <div id="inputPanel" class="input-panel" style="opacity: 0.5; pointer-events: none;">
-            <input type="text" id="messageInput" placeholder="Mesaj yazın...">
-            <button onclick="sendMessage()">Göndər</button>
+        <!-- Sağ Tərəf: Mesajlaşma -->
+        <div class="main-chat">
+            <div class="chat-header" id="currentChatTitle">Ümumi Otaq</div>
+            <div class="messages-area" id="messagesArea"></div>
+            <div class="input-area">
+                <input type="text" id="messageInput" placeholder="Mesaj yazın...">
+                <button onclick="sendMessage()">Göndər</button>
+            </div>
         </div>
     </div>
 
     <script>
-        // Sondakı lazımsız slaş işarəsi təmizləndi
         const BASE_URL = "https://realtimechatapp-production-1e1f.up.railway.app";
-
         let connection = null;
-        let currentUserId = null;
-        let currentUsername = null;
+        let currentUser = null;
+        let activeRoomId = "global";
 
-        async function registerAndConnect() {
+        async function loginOrRegister() {
             const username = document.getElementById("usernameInput").value.trim();
-            if (!username) return alert("Ad yazın!");
+            const password = document.getElementById("passwordInput").value.trim();
+            if (!username || !password) return alert("Bütün xanaları doldurun!");
 
             try {
-                // Slaş xətası və url strukturu tam olaraq düzəldildi
-                const targetUrl = `${BASE_URL}/api/users/register?username=${encodeURIComponent(username)}&email=${encodeURIComponent(username)}@chat.com`;
-
-                const res = await fetch(targetUrl, {
+                // Şifrəli yeni modelə uyğun sorğu göndəririk
+                const res = await fetch(`${BASE_URL}/api/users/login-or-register`, {
                     method: "POST",
-                    headers: {
-                        "Accept": "application/json",
-                        "Content-Type": "application/json"
-                    }
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username: username, password: password })
                 });
 
-                if (!res.ok) {
-                    alert("Xəta: " + await res.text());
-                    return;
-                }
+                if (!res.ok) return alert("Xəta: " + await res.text());
 
-                const user = await res.json();
-                currentUserId = user.id;
-                currentUsername = user.username;
-
-                document.getElementById("authPanel").style.display = "none";
-                document.getElementById("inputPanel").style.opacity = "1";
-                document.getElementById("inputPanel").style.pointerEvents = "auto";
+                currentUser = await res.json();
+                document.getElementById("authOverlay").style.display = "none";
+                document.getElementById("appMain").style.display = "flex";
+                document.getElementById("myProfileHeader").innerText = currentUser.username;
 
                 initSignalR();
+                loadUsersList(); // Digər insanları sol tərəfə siyahı olaraq gətirir
             } catch (e) {
-                console.error(e);
-                alert("Backendə qoşulma xətası! Serverin aktiv olduğundan əmin olun.");
+                alert("Server bağlantı xətası!");
             }
         }
 
+        async function loadUsersList() {
+            // Digər istifadəçiləri bazadan çəkirik ki, üzərlərinə vurub özəl çat aça bilək
+            const res = await fetch(`${BASE_URL}/api/users/all`);
+            const users = await res.json();
+            const listHtml = document.getElementById("activeChatsList");
+
+            users.forEach(user => {
+                if (user.id !== currentUser.id) {
+                    listHtml.innerHTML += `
+                            <div class="chat-item" onclick="startPrivateChat('${user.id}', '${user.username}')">
+                                <div class="avatar">${user.username[0].toUpperCase()}</div>
+                                <div><b>${user.username}</b></div>
+                            </div>`;
+                }
+            });
+        }
+
+        function startPrivateChat(targetUserId, targetUsername) {
+            // Özəl otaq ID-si həmişə iki ID-nin qarışığından unikal yaradılır
+            activeRoomId = currentUser.id < targetUserId ? `${currentUser.id}_${targetUserId}` : `${targetUserId}_${currentUser.id}`;
+            document.getElementById("currentChatTitle").innerText = targetUsername;
+            document.getElementById("messagesArea").innerHTML = "";
+
+            // Backend-dən yalnız bu iki nəfərə aid köhnə mesajları çəkirik
+            loadChatHistory(activeRoomId);
+
+            // SignalR-a bu otaq qrupuna qoşulmaq əmri veririk
+            connection.invoke("JoinRoom", activeRoomId);
+        }
+
         function initSignalR() {
-            // SignalR üçün url düzəldildi
             connection = new signalR.HubConnectionBuilder()
                 .withUrl(BASE_URL + "/chatHub")
-                .withAutomaticReconnect() // Kəsinti olarsa avtomatik bərpa etsin
+                .withAutomaticReconnect()
                 .build();
 
-            connection.on("ReceiveMessage", function (user, message) {
-                const chatMessages = document.getElementById("chatMessages");
-                const msgDiv = document.createElement("div");
-                msgDiv.className = "message " + (user === currentUsername ? "sent" : "received");
-                msgDiv.innerHTML = "<b>" + user + ":</b> " + message;
-                chatMessages.appendChild(msgDiv);
-                chatMessages.scrollTop = chatMessages.scrollHeight;
+            connection.on("ReceivePrivateMessage", function (senderName, message, roomId) {
+                if (roomId === activeRoomId) {
+                    appendMessage(senderName, message);
+                }
             });
 
-            connection.start()
-                .then(() => console.log("SignalR bağlantısı uğurla quruldu!"))
-                .catch(err => console.error("SignalR xətası:", err.toString()));
+            connection.start().then(() => {
+                connection.invoke("JoinRoom", activeRoomId);
+            });
+        }
+
+        async function loadChatHistory(roomId) {
+            const res = await fetch(`${BASE_URL}/api/users/messages/${roomId}`);
+            if (!res.ok) return;
+            const messages = await res.json();
+            messages.forEach(msg => appendMessage(msg.senderUsername, msg.content));
+        }
+
+        function appendMessage(sender, text) {
+            const area = document.getElementById("messagesArea");
+            const div = document.createElement("div");
+            div.className = "msg " + (sender === currentUser.username ? "sent" : "received");
+            div.innerHTML = text;
+            area.appendChild(div);
+            area.scrollTop = area.scrollHeight;
         }
 
         async function sendMessage() {
             const input = document.getElementById("messageInput");
             const text = input.value.trim();
-
             if (!text || !connection) return;
 
-            try {
-                await connection.invoke("SendMessage", currentUserId, text);
-                input.value = "";
-            } catch (e) {
-                console.error("Mesaj göndərilərkən xəta baş verdi:", e);
-            }
+            // Mesajı SignalR vasitəsilə otaq qrupuna göndəririk
+            await connection.invoke("SendPrivateMessage", activeRoomId, currentUser.id, text);
+            input.value = "";
         }
     </script>
-
 </body>
 </html>
