@@ -218,7 +218,7 @@
     <!-- Giriş Bölməsi -->
     <div id="authOverlay" class="auth-overlay">
         <div class="auth-box">
-            <h2>WhatsApp Chat-ə Giriş</h2>
+            <h2>Chat Giriş</h2>
             <p style="font-size: 12px; color: #8696a0;">Ad və Giriş Kodu (Şifrə) təyin edin</p>
             <input type="text" id="usernameInput" placeholder="İstifadəçi adı...">
             <input type="password" id="passwordInput" placeholder="Giriş Kodu (Şifrə)...">
@@ -263,7 +263,6 @@
             if (!username || !password) return alert("Bütün xanaları doldurun!");
 
             try {
-                // Şifrəli yeni modelə uyğun sorğu göndəririk
                 const res = await fetch(`${BASE_URL}/api/users/login-or-register`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -272,13 +271,14 @@
 
                 if (!res.ok) return alert("Xəta: " + await res.text());
 
-                currentUser = await res.json();
+                currentUser = await res.json(); // C#-dan bütöv User obyekti gəlir: { id: 1, username: "Ali", ... }
+
                 document.getElementById("authOverlay").style.display = "none";
                 document.getElementById("appMain").style.display = "flex";
                 document.getElementById("myProfileHeader").innerText = currentUser.username;
 
                 initSignalR();
-                loadUsersList(); // Digər insanları sol tərəfə siyahı olaraq gətirir
+                loadUsersList();
             } catch (e) {
                 alert("Server bağlantı xətası!");
             }
@@ -302,16 +302,23 @@
         }
 
         function startPrivateChat(targetUserId, targetUsername) {
-            // Özəl otaq ID-si həmişə iki ID-nin qarışığından unikal yaradılır
-            activeRoomId = currentUser.id < targetUserId ? `${currentUser.id}_${targetUserId}` : `${targetUserId}_${currentUser.id}`;
+            // ID-ləri mütləq rəqəmə (Number) çeviririk ki, riyazi olaraq düzgün müqayisə olunsun
+            const myId = Number(currentUser.id);
+            const theirId = Number(targetUserId);
+
+            // Kiçik ID həmişə öndə olacaq şəkildə unikal otaq adı yaradırıq (Məsələn: "1_2")
+            activeRoomId = myId < theirId ? `${myId}_${theirId}` : `${theirId}_${myId}`;
+
             document.getElementById("currentChatTitle").innerText = targetUsername;
             document.getElementById("messagesArea").innerHTML = "";
 
-            // Backend-dən yalnız bu iki nəfərə aid köhnə mesajları çəkirik
+            // Köhnə mesajları yükləyirik
             loadChatHistory(activeRoomId);
 
-            // SignalR-a bu otaq qrupuna qoşulmaq əmri veririk
-            connection.invoke("JoinRoom", activeRoomId);
+            // Canlı otaq qrupuna qoşuluruq
+            if (connection && connection.state === signalR.HubConnectionState.Connected) {
+                connection.invoke("JoinRoom", activeRoomId);
+            }
         }
 
         function initSignalR() {
@@ -349,12 +356,18 @@
 
         async function sendMessage() {
             const input = document.getElementById("messageInput");
+            if (!input) return console.error("messageInput ID-li qutu tapılmadı!");
+
             const text = input.value.trim();
             if (!text || !connection) return;
 
-            // Mesajı SignalR vasitəsilə otaq qrupuna göndəririk
-            await connection.invoke("SendPrivateMessage", activeRoomId, currentUser.id, text);
-            input.value = "";
+            try {
+                // C#-dakı int senderId parametrinə uyğun olaraq Id-ni göndəririk
+                await connection.invoke("SendPrivateMessage", activeRoomId, Number(currentUser.id), text);
+                input.value = ""; // Qutunu təmizləyirik
+            } catch (e) {
+                console.error("Mesaj göndərilərkən xəta:", e);
+            }
         }
     </script>
 </body>
