@@ -32,7 +32,6 @@ namespace ChatApp.Backend.Controllers
             if (existingUser != null)
             {
                 // İstifadəçi tapıldı, şifrəni yoxlayırıq
-                // Real layihədə bu PasswordHash ilə yoxlanmalıdır, hələlik sadəlik üçün düz mətn kimi yoxlayırıq
                 if (existingUser.PasswordHash != request.Password)
                 {
                     return BadRequest("Səhv Giriş Kodu (Şifrə)!");
@@ -44,7 +43,7 @@ namespace ChatApp.Backend.Controllers
             var newUser = new User
             {
                 Username = request.Username,
-                PasswordHash = request.Password, // Frontend-dən gələn şifrəni bura yazırıq
+                PasswordHash = request.Password,
                 Email = $"{request.Username}@chat.com"
             };
 
@@ -71,10 +70,37 @@ namespace ChatApp.Backend.Controllers
             var messages = await _context.Messages
                 .Where(m => m.ChatRoom.RoomName == roomName)
                 .OrderBy(m => m.Timestamp)
-                .Select(m => new { m.SenderName, m.Content, m.Timestamp })
+                // senderUsername olaraq anonim obyekt yaradırıq ki, frontend tam oxuya bilsin
+                .Select(m => new { senderUsername = m.SenderName, m.Content, m.Timestamp })
                 .ToListAsync();
 
             return Ok(messages);
+        }
+
+        // 4. BİR OTAĞIN BÜTÜN MESAJ TARİXÇƏSİNİ SİLMƏK (DELETE: api/users/messages/clear/{roomName})
+        [HttpDelete("messages/clear/{roomName}")]
+        public async Task<IActionResult> ClearRoomMessages(string roomName)
+        {
+            try
+            {
+                // Həmin otağa aid olan bütün mesajları bazadan tapırıq
+                var messages = await _context.Messages
+                    .Where(m => m.ChatRoom.RoomName == roomName)
+                    .ToListAsync();
+
+                if (messages.Any())
+                {
+                    // Tapılan bütün mesajları toplu şəkildə silirik
+                    _context.Messages.RemoveRange(messages);
+                    await _context.SaveChangesAsync();
+                }
+
+                return Ok(new { message = $"'{roomName}' otağının tarixçəsi uğurla silindi." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Silinmə zamanı daxili xəta baş verdi: {ex.Message}");
+            }
         }
     }
 }
