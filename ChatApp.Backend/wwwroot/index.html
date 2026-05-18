@@ -475,20 +475,25 @@
                 .build();
 
             connection.on("ReceivePrivateMessage", function (senderName, message, roomId) {
+                // Ssenari 1: Əgər gələn mesajın otağı hazırda ekranda AÇIQ olan otaqdırsa, birbaşa ekrana yaz
                 if (roomId === activeRoomId) {
                     appendMessage(senderName, message);
-                } else {
-                    // Əgər gələn mesaj şəxsi mesajdırsa və hazırda açıq olan otaq deyilsə badge-i artır
+                }
+                // Ssenari 2: Əgər mesaj başqa bir otaqdan (və ya sən hələ heç bir çata girməmisənsə) gəlibsə
+                else {
+                    // Gələn mesajın ümumi otaq mesajı olmadığından əmin oluruq (şəxsi mesajdırsa)
                     if (roomId !== "global") {
+                        // RoomId "1_2" formatındadır. Göndərən istifadəçinin ID-sini tapırıq:
                         const ids = roomId.split("_");
                         const senderId = ids.find(id => Number(id) !== Number(currentUser.id));
 
+                        // Həmin istifadəçinin adının yanındakı badge-i tapırıq
                         const badge = document.getElementById(`badge-${senderId}`);
                         if (badge) {
                             let count = parseInt(badge.innerText) || 0;
                             count++;
                             badge.innerText = count;
-                            badge.style.display = "block";
+                            badge.style.display = "block"; // Yaşıl bildirişi görünən et
                         }
                     }
                 }
