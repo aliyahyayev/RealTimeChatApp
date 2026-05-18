@@ -1,7 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ChatApp.Backend.Data;
+﻿using ChatApp.Backend.Data;
+using ChatApp.Backend.Hubs;
 using ChatApp.Backend.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR; // Bu namespace-i əlavə et
+using Microsoft.EntityFrameworkCore;
+// using ChatApp.Backend.Hubs; // ChatHub hansı qovluqdadırsa, bura daxil et
 
 namespace ChatApp.Backend.Controllers
 {
@@ -10,20 +13,21 @@ namespace ChatApp.Backend.Controllers
     public class UsersController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly IHubContext<ChatHub> _hubContext; // SignalR Context-i əlavə edirik
 
-        // Frontend-dən gələn məlumatları qarşılamaq üçün kiçik model (DTO)
         public class LoginRequest
         {
             public string Username { get; set; } = string.Empty;
             public string Password { get; set; } = string.Empty;
         }
 
-        public UsersController(AppDbContext context)
+        // Konstruktorda həm context-i, həm de hubContext-i qəbul edirik
+        public UsersController(AppDbContext context, IHubContext<ChatHub> hubContext)
         {
             _context = context;
+            _hubContext = hubContext;
         }
 
-        // 1. Giriş və ya Qeydiyyat (POST: api/users/login-or-register)
         [HttpPost("login-or-register")]
         public async Task<IActionResult> LoginOrRegister([FromBody] LoginRequest request)
         {
@@ -31,15 +35,17 @@ namespace ChatApp.Backend.Controllers
 
             if (existingUser != null)
             {
-                // İstifadəçi tapıldı, şifrəni yoxlayırıq
                 if (existingUser.PasswordHash != request.Password)
                 {
                     return BadRequest("Səhv Giriş Kodu (Şifrə)!");
                 }
-                return Ok(existingUser); // Giriş uğurludur
+
+                // Mövcud istifadəçi daxil olduqda da siyahını yeniləyə bilərik
+                await _hubContext.Clients.All.SendAsync("UserStatusChanged");
+
+                return Ok(existingUser);
             }
 
-            // İstifadəçi yoxdursa, yeni hesab yaradırıq
             var newUser = new User
             {
                 Username = request.Username,
@@ -49,48 +55,46 @@ namespace ChatApp.Backend.Controllers
 
             _context.Users.Add(newUser);
             await _context.SaveChangesAsync();
+
+            // CANLI BİLDİRİŞ: Yeni istifadəçi yarandıqda, sistemdəki hər kəsə siqnal göndərilir
+            await _hubContext.Clients.All.SendAsync("UserStatusChanged");
+
             return Ok(newUser);
         }
 
-        // 2. Çat siyahısı üçün digər bütün istifadəçiləri gətirmək (GET: api/users/all)
         [HttpGet("all")]
         public async Task<IActionResult> GetAllUsers()
         {
             var users = await _context.Users
-                .Select(u => new { u.Id, u.Username }) // Şifrələri frontenda göndərmirik (Təhlükəsizlik)
+                .Select(u => new { u.Id, u.Username })
                 .ToListAsync();
 
             return Ok(users);
         }
 
-        // 3. Konkret bir özəl otağın mesaj tarixçəsini gətirmək (GET: api/users/messages/{roomName})
         [HttpGet("messages/{roomName}")]
         public async Task<IActionResult> GetRoomMessages(string roomName)
         {
             var messages = await _context.Messages
                 .Where(m => m.ChatRoom.RoomName == roomName)
                 .OrderBy(m => m.Timestamp)
-                // senderUsername olaraq anonim obyekt yaradırıq ki, frontend tam oxuya bilsin
                 .Select(m => new { senderUsername = m.SenderName, m.Content, m.Timestamp })
                 .ToListAsync();
 
             return Ok(messages);
         }
 
-        // 4. BİR OTAĞIN BÜTÜN MESAJ TARİXÇƏSİNİ SİLMƏK (DELETE: api/users/messages/clear/{roomName})
         [HttpDelete("messages/clear/{roomName}")]
         public async Task<IActionResult> ClearRoomMessages(string roomName)
         {
             try
             {
-                // Həmin otağa aid olan bütün mesajları bazadan tapırıq
                 var messages = await _context.Messages
                     .Where(m => m.ChatRoom.RoomName == roomName)
                     .ToListAsync();
 
                 if (messages.Any())
                 {
-                    // Tapılan bütün mesajları toplu şəkildə silirik
                     _context.Messages.RemoveRange(messages);
                     await _context.SaveChangesAsync();
                 }

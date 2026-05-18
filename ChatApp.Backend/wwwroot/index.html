@@ -28,7 +28,7 @@
             display: flex;
             width: 100%;
             height: 100vh;
-            height: 100dvh; /* Bura da daxil edirik */
+            height: 100dvh;
             background-color: #f0f2f5;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             overflow: hidden;
@@ -121,6 +121,18 @@
             font-weight: bold;
         }
 
+        /* Oxunmamış Mesaj Bildirişi (Badge) */
+        .unread-badge {
+            background-color: #25d366; /* WhatsApp yaşıl rəngi */
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 12px;
+            margin-left: auto; /* Düyməni tam sağa çəkir */
+            display: none; /* İlkin olaraq gizli qalsın */
+        }
+
         /* Sağ Panel - Söhbət ekranı */
         .main-chat {
             width: 100%;
@@ -161,7 +173,7 @@
             font-weight: bold;
             border-bottom: 1px solid #e3e3e3;
             height: 60px;
-            flex-shrink: 0; /* Headerin sıxılmasının qarşısını alır */
+            flex-shrink: 0;
         }
 
         .header-left {
@@ -229,7 +241,7 @@
                 align-self: flex-start;
             }
 
-        /* Giriş Paneli - Mobil üçün tam aşağı bərkidildi */
+        /* Giriş Paneli */
         .input-area {
             padding: 10px;
             background: #f0f2f5;
@@ -237,7 +249,7 @@
             gap: 10px;
             align-items: center;
             height: 65px;
-            flex-shrink: 0; /* Aşağı panelin sıxılıb yox olmasını əngəlləyir */
+            flex-shrink: 0;
             border-top: 1px solid #e3e3e3;
         }
 
@@ -397,18 +409,19 @@
                 const listHtml = document.getElementById("activeChatsList");
 
                 listHtml.innerHTML = `
-                        <div class="chat-item" onclick="switchToGlobalRoom()">
-                            <div class="avatar" style="background: #007bff;">G</div>
-                            <div><b>Ümumi Otaq</b></div>
-                        </div>`;
+                            <div class="chat-item" onclick="switchToGlobalRoom()">
+                                <div class="avatar" style="background: #007bff;">G</div>
+                                <div><b>Ümumi Otaq</b></div>
+                            </div>`;
 
                 users.forEach(user => {
                     if (user.id !== currentUser.id) {
                         listHtml.innerHTML += `
-                                <div class="chat-item" onclick="startPrivateChat('${user.id}', '${user.username}')">
-                                    <div class="avatar">${user.username[0].toUpperCase()}</div>
-                                    <div><b>${user.username}</b></div>
-                                </div>`;
+                                    <div class="chat-item" id="chat-item-${user.id}" onclick="startPrivateChat('${user.id}', '${user.username}')">
+                                        <div class="avatar">${user.username[0].toUpperCase()}</div>
+                                        <div><b>${user.username}</b></div>
+                                        <span class="unread-badge" id="badge-${user.id}">0</span>
+                                    </div>`;
                     }
                 });
             } catch (err) {
@@ -420,11 +433,17 @@
             const myId = Number(currentUser.id);
             const theirId = Number(targetUserId);
 
-            // DÜZƏLİŞ: Burada 'theird' yazılmışdı, 'theirId' olaraq korreksiya edildi!
             activeRoomId = myId < theirId ? `${myId}_${theirId}` : `${theirId}_${myId}`;
 
             document.getElementById("currentChatTitle").innerText = targetUsername;
             document.getElementById("messagesArea").innerHTML = "";
+
+            // Aktiv çata daxil olduqda həmin şəxsin bildiriş nişanını (badge) sıfırla və gizlə
+            const badge = document.getElementById(`badge-${targetUserId}`);
+            if (badge) {
+                badge.innerText = "0";
+                badge.style.display = "none";
+            }
 
             loadChatHistory(activeRoomId);
 
@@ -458,6 +477,20 @@
             connection.on("ReceivePrivateMessage", function (senderName, message, roomId) {
                 if (roomId === activeRoomId) {
                     appendMessage(senderName, message);
+                } else {
+                    // Əgər gələn mesaj şəxsi mesajdırsa və hazırda açıq olan otaq deyilsə badge-i artır
+                    if (roomId !== "global") {
+                        const ids = roomId.split("_");
+                        const senderId = ids.find(id => Number(id) !== Number(currentUser.id));
+
+                        const badge = document.getElementById(`badge-${senderId}`);
+                        if (badge) {
+                            let count = parseInt(badge.innerText) || 0;
+                            count++;
+                            badge.innerText = count;
+                            badge.style.display = "block";
+                        }
+                    }
                 }
             });
 
@@ -465,6 +498,12 @@
                 if (roomId === activeRoomId) {
                     document.getElementById("messagesArea").innerHTML = "";
                 }
+            });
+
+            // Arxa fonda səssizcə siyahını yeniləyən siqnal mexanizmi
+            connection.on("UserStatusChanged", function () {
+                console.log("Sistemdə dəyişiklik aşkarlandı, siyahı yenilənir...");
+                loadUsersList();
             });
 
             connection.start().then(() => {
