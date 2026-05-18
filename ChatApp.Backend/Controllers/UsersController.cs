@@ -2,9 +2,11 @@
 using ChatApp.Backend.Hubs;
 using ChatApp.Backend.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR; // Bu namespace-i əlavə et
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
-// using ChatApp.Backend.Hubs; // ChatHub hansı qovluqdadırsa, bura daxil et
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace ChatApp.Backend.Controllers
 {
@@ -13,7 +15,7 @@ namespace ChatApp.Backend.Controllers
     public class UsersController : ControllerBase
     {
         private readonly AppDbContext _context;
-        private readonly IHubContext<ChatHub> _hubContext; // SignalR Context-i əlavə edirik
+        private readonly IHubContext<ChatHub> _hubContext;
 
         public class LoginRequest
         {
@@ -21,7 +23,6 @@ namespace ChatApp.Backend.Controllers
             public string Password { get; set; } = string.Empty;
         }
 
-        // Konstruktorda həm context-i, həm de hubContext-i qəbul edirik
         public UsersController(AppDbContext context, IHubContext<ChatHub> hubContext)
         {
             _context = context;
@@ -40,9 +41,11 @@ namespace ChatApp.Backend.Controllers
                     return BadRequest("Səhv Giriş Kodu (Şifrə)!");
                 }
 
-                // Mövcud istifadəçi daxil olduqda da siyahını yeniləyə bilərik
-                await _hubContext.Clients.All.SendAsync("UserStatusChanged");
+                // DƏYİŞDİ: Login olanda istifadəçini online edirik
+                existingUser.IsOnline = true;
+                await _context.SaveChangesAsync();
 
+                await _hubContext.Clients.All.SendAsync("UserStatusChanged");
                 return Ok(existingUser);
             }
 
@@ -50,22 +53,23 @@ namespace ChatApp.Backend.Controllers
             {
                 Username = request.Username,
                 PasswordHash = request.Password,
-                Email = $"{request.Username}@chat.com"
+                Email = $"{request.Username}@chat.com",
+                IsOnline = true // DƏYİŞDİ: Yeni qeydiyyat da birbaşa online sayılır
             };
 
             _context.Users.Add(newUser);
             await _context.SaveChangesAsync();
 
-            // CANLI BİLDİRİŞ: Yeni istifadəçi yarandıqda, sistemdəki hər kəsə siqnal göndərilir
             await _hubContext.Clients.All.SendAsync("UserStatusChanged");
-
             return Ok(newUser);
         }
 
         [HttpGet("all")]
         public async Task<IActionResult> GetAllUsers()
         {
+            // DƏYİŞDİ: Artıq sol paneldə YALNIZ hal-hazırda tətbiqdə aktiv (Online) olanlar görünəcək
             var users = await _context.Users
+                .Where(u => u.IsOnline)
                 .Select(u => new { u.Id, u.Username })
                 .ToListAsync();
 
