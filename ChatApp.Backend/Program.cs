@@ -2,6 +2,9 @@
 using ChatApp.Backend.Data;
 using ChatApp.Backend.Hubs;
 
+// .NET-ə deyirik ki, Docker daxilində həm HTTP (8080), həm HTTPS (8081) portlarını aktiv etsin
+Environment.SetEnvironmentVariable("ASPNETCORE_URLS", "http://+:8080;https://+:8081");
+
 // --- 1. PORT AYARI (Railway üçün mütləqdir) ---
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 
