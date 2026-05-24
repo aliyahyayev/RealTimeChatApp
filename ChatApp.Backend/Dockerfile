@@ -1,4 +1,4 @@
-# See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
+﻿# See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
 # This stage is used when running from VS in fast mode (Default for Debug configuration)
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
@@ -10,13 +10,14 @@ EXPOSE 8081
 
 # This stage is used to build the service project
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["ChatApp.Backend/ChatApp.Backend.csproj", "ChatApp.Backend/"]
-RUN dotnet restore "./ChatApp.Backend/ChatApp.Backend.csproj"
+
+# Başındakı qovluq adlarını sildik, çünki onsuz da bu qovluqdayıq!
+COPY ["ChatApp.Backend.csproj", "./"]
+RUN dotnet restore "ChatApp.Backend.csproj"
+
 COPY . .
-WORKDIR "/src/ChatApp.Backend"
-RUN dotnet build "./ChatApp.Backend.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet build "ChatApp.Backend.csproj" -c Release -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
